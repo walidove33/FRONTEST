@@ -391,72 +391,75 @@ export class NavbarComponent implements OnInit, OnDestroy {
     
     if (this.isLoading) return;
     
+    // Direct logout without confirmation for better UX
     this.isLoading = true;
     this.cdr.markForCheck();
     
-    // Show confirmation with enhanced UX
-    this.notificationService.warning(
-      'Confirmer la déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
-      0,
-      [
-        {
-          label: 'Annuler',
-          style: 'secondary',
-          action: () => {
-            this.isLoading = false;
-            this.cdr.markForCheck();
-            this.notificationService.info('Déconnexion', 'Déconnexion annulée');
-          }
-        },
-        {
-          label: 'Se déconnecter',
-          style: 'danger',
-          action: async () => {
-            try {
-              // Add visual feedback
-              const navbar = document.querySelector('.estbm-navbar');
-              if (navbar) {
-                navbar.classList.add('navbar-loading');
-              }
-              
-              await this.authService.logout();
-              
-              // Success animation
-              if (navbar) {
-                navbar.classList.remove('navbar-loading');
-                navbar.classList.add('navbar-success');
-              }
-              
-              // Navigate after animation
-              setTimeout(() => {
-                this.router.navigate(['/login']);
-              }, 500);
-              
-            } catch (error) {
-              console.error('Logout error:', error);
-              this.notificationService.error(
-                'Erreur de déconnexion',
-                'Une erreur est survenue lors de la déconnexion'
-              );
-              
-              // Error animation
-              const navbar = document.querySelector('.estbm-navbar');
-              if (navbar) {
-                navbar.classList.remove('navbar-loading');
-                navbar.classList.add('navbar-error');
-                setTimeout(() => {
-                  navbar.classList.remove('navbar-error');
-                }, 1000);
-              }
-            } finally {
-              this.isLoading = false;
-              this.cdr.markForCheck();
-            }
-          }
-        }
-      ]
-    );
+    try {
+      // Add visual feedback
+      const logoutBtn = event.target as HTMLElement;
+      const navbar = document.querySelector('.estbm-navbar');
+      
+      if (logoutBtn) {
+        logoutBtn.classList.add('processing');
+      }
+      
+      if (navbar) {
+        navbar.classList.add('navbar-loading');
+      }
+      
+      // Show immediate feedback
+      this.notificationService.info('Déconnexion', 'Déconnexion en cours...');
+      
+      // Perform logout
+      this.authService.logout();
+      
+      // Success animation
+      if (logoutBtn) {
+        logoutBtn.classList.remove('processing');
+        logoutBtn.classList.add('success');
+      }
+      
+      if (navbar) {
+        navbar.classList.remove('navbar-loading');
+        navbar.classList.add('navbar-success');
+      }
+      
+      // Close menus
+      this.closeMenus();
+      
+      // Navigate after brief animation
+      setTimeout(() => {
+        this.router.navigate(['/login']);
+      }, 800);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      
+      const logoutBtn = event.target as HTMLElement;
+      const navbar = document.querySelector('.estbm-navbar');
+      
+      if (logoutBtn) {
+        logoutBtn.classList.remove('processing');
+        logoutBtn.classList.add('error');
+      }
+      
+      if (navbar) {
+        navbar.classList.remove('navbar-loading');
+        navbar.classList.add('navbar-error');
+        setTimeout(() => {
+          navbar.classList.remove('navbar-error');
+        }, 1000);
+      }
+      
+      this.notificationService.error(
+        'Erreur de déconnexion',
+        'Une erreur est survenue lors de la déconnexion'
+      );
+    } finally {
+      this.isLoading = false;
+      this.cdr.markForCheck();
+    }
   }
 
   // ==================== NAVIGATION HELPERS ====================
